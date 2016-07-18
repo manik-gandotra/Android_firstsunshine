@@ -23,33 +23,44 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 
-public class MainActivity extends ActionBarActivity {
-
-    private final String FORECASTFRAGMENT_TAG="FFTAG";
+public class MainActivity extends ActionBarActivity implements ForecastFragment.Callback{
+    private final String DETAILFRAGMENT_TAG="DFTAG";
     private final String LOG_TAG = MainActivity.class.getSimpleName();
     private String mLocation;
+    private boolean mTwoPane;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         mLocation=Utility.getPreferredLocation(this);
-        if (savedInstanceState == null) {
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new ForecastFragment(),FORECASTFRAGMENT_TAG)
-                    .commit();
+        if(findViewById(R.id.weather_detail_container)!=null){
+            mTwoPane=true;
+            if(savedInstanceState==null){
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.weather_detail_container,new DetailFragment(),DETAILFRAGMENT_TAG)
+                        .commit();
+            }
         }
+        else
+            mTwoPane=false;
     }
     protected void onResume(){
         super.onResume();
         String location=Utility.getPreferredLocation(this);
         if(location!=null&& !location.equals(mLocation)){
-            ForecastFragment ff= (ForecastFragment)getSupportFragmentManager().findFragmentByTag(FORECASTFRAGMENT_TAG);
+            ForecastFragment ff= (ForecastFragment)getSupportFragmentManager().findFragmentById(R.id.fragment_forecast);
             if(ff!=null) {
             ff.onLocationChanged();
             }
             mLocation=location;
             }
+        DetailFragment df = (DetailFragment)getSupportFragmentManager().findFragmentByTag(DETAILFRAGMENT_TAG);
+        if ( null != df ) {
+            df.onLocationChanged(location);
         }
+        mLocation = location;
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -76,7 +87,21 @@ public class MainActivity extends ActionBarActivity {
         }
         return super.onOptionsItemSelected(item);
     }
-
+    public void onItemSelected(Uri dateUri) {
+        if (mTwoPane == true) {
+            Bundle args = new Bundle();
+            args.putParcelable(DetailFragment.DETAIL_URI, dateUri);
+            DetailFragment fragment=new DetailFragment();
+            fragment.setArguments(args);
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.weather_detail_container,fragment, DETAILFRAGMENT_TAG)
+                    .commit();
+        } else {
+            Intent intent = new Intent(getApplicationContext(), DetailActivity.class)
+                    .setData(dateUri);
+            startActivity(intent);
+        }
+    }
     private void openPreferredLocationInMap() {
         String location = Utility.getPreferredLocation(this);
         // Using the URI scheme for showing a location found on a map.  This super-handy

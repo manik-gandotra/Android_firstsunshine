@@ -160,7 +160,7 @@ public class FetchWeatherTask extends AsyncTask<String, Void,Void> {
 
             long locationId = addLocation(locationSetting, cityName, cityLatitude, cityLongitude);
 
-            // Insert the new weather information into the database
+            // Insert the new wemmcoather information into the database
             Vector<ContentValues> cVVector = new Vector<ContentValues>(weatherArray.length());
 
             // OWM returns daily forecasts based upon the local time of the city that is being
@@ -320,8 +320,10 @@ public class FetchWeatherTask extends AsyncTask<String, Void,Void> {
                 // Stream was empty.  No point in parsing.
                 return null;
             }
-            forecastJsonStr = buffer.toString();
-            getWeatherDataFromJson(forecastJsonStr, locationQuery);}
+                forecastJsonStr = buffer.toString();
+                getWeatherDataFromJson(forecastJsonStr, locationQuery);
+                Log.d(LOG_TAG, forecastJsonStr);
+        }
          catch (IOException e) {
             Log.e(LOG_TAG, "Error ", e);
             // If the code didn't successfully get the weather data, there's no point in attemping

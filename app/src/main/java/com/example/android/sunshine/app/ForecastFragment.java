@@ -15,7 +15,6 @@
  */
 package com.example.android.sunshine.app;
 
-import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -40,9 +39,11 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     private ForecastAdapter mForecastAdapter;
     private static final int loaderID=0;
+    public ListView listView;
     public ForecastFragment() {
     }
-
+    public String pos="Position";
+    public int sPosition=ListView.INVALID_POSITION;
     private static final String[] FORECAST_COLUMNS = {
             // In this case the id needs to be fully qualified with a table name, since
             // the content provider joins the location & weather tables in the background
@@ -78,6 +79,17 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         // Add this line in order for this fragment to handle menu events.
         setHasOptionsMenu(true);
     }
+    /**
+     * A callback interface that all activities containing this fragment must
+     * implement. This mechanism allows activities to be notified of item
+     * selections.
+     */
+    public interface Callback {
+        /**
+         * DetailFragmentCallback for when an item has been selected.
+         */
+        public void onItemSelected(Uri dateUri);
+    }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -102,11 +114,11 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+                             final Bundle savedInstanceState) {
         // Get a reference to the ListView, and attach this adapter to it.
         mForecastAdapter = new ForecastAdapter(getActivity(), null, 0);
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
+        listView = (ListView) rootView.findViewById(R.id.listview_forecast);
         listView.setAdapter(mForecastAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -117,16 +129,14 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
                 Cursor cursor = (Cursor) adapterView.getItemAtPosition(position);
                 if (cursor != null) {
                     String locationSetting = Utility.getPreferredLocation(getActivity());
-                    Intent intent = new Intent(getActivity(), DetailActivity.class)
-                            .setData(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
-                                    locationSetting, cursor.getLong(COL_WEATHER_DATE)
-                            ));
-                    startActivity(intent);
+                    ((Callback)getActivity()).onItemSelected(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationSetting,cursor.getLong(COL_WEATHER_DATE)));
                 }
+                sPosition=position;
             }
         });
-
-        return rootView;
+        if(savedInstanceState!=null && savedInstanceState.containsKey(pos))
+            sPosition=savedInstanceState.getInt(pos);
+            return rootView;
     }
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
@@ -149,8 +159,17 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         return new CursorLoader(getActivity(),weatherForLocationUri,FORECAST_COLUMNS,null,null,sortOrder);
     }
     @Override
+    public void onSaveInstanceState(Bundle savedInstanceState){
+        if(sPosition!=ListView.INVALID_POSITION){
+            savedInstanceState.putInt(pos,sPosition);
+        }
+    }
+    @Override
     public void onLoadFinished(Loader<Cursor> cursorLoader,Cursor cursor){
         mForecastAdapter.swapCursor(cursor);
+        if(ListView.INVALID_POSITION!=sPosition){
+            listView.smoothScrollToPosition(sPosition);
+        }
     }
 
     @Override
